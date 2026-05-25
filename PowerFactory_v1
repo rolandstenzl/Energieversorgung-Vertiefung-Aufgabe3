@@ -1,0 +1,156 @@
+import sys
+import os
+import csv
+
+sys.path.append(
+    r"C:\Program Files\DIgSILENT\PowerFactory 2025 SP1\Python\3.13"
+)
+
+import powerfactory as pf # type: ignore
+
+app = pf.GetApplication()
+
+if not app:
+    print("Close PowerFactory and retry.")
+    sys.exit()
+
+project_name = "Transmission System"
+
+if app.ActivateProject(project_name) != 0:
+    print("Project not found.")
+    sys.exit()
+
+print("Project active.")
+
+ldf = app.GetFromStudyCase("ComLdf")
+
+if ldf.Execute() != 0:
+    print("Load flow failed.")
+    sys.exit()
+
+print("Load flow successful.")
+
+# ------------------
+# BUS VOLTAGES
+# ------------------
+
+busbars = app.GetCalcRelevantObjects("*.ElmTerm")
+
+voltage_results = []
+
+for bus in busbars:
+
+    try:
+        voltage_results.append({
+            "Bus": bus.loc_name,
+            "Voltage_kV": bus.GetAttribute("m:u"),
+            "Voltage_pu": bus.GetAttribute("m:u1")
+        })
+    except:
+        pass
+
+# Voltage violations
+
+violations = [
+    v for v in voltage_results
+    if v["Voltage_pu"] < 0.95
+    or v["Voltage_pu"] > 1.05
+]
+
+print("\nVoltage Violations")
+
+for v in violations:
+    print(v)
+
+# ------------------
+# LINES
+# ------------------
+
+lines = app.GetCalcRelevantObjects("*.ElmLne")
+
+for line in lines:
+
+    loading = line.GetAttribute("c:loading")
+
+    if loading > 100:
+        print(
+            f"Line overload: "
+            f"{line.loc_name} {loading:.1f}%"
+        )
+
+# ------------------
+# TRANSFORMERS
+# ------------------
+
+trafos = app.GetCalcRelevantObjects("*.ElmTr2")
+
+for tr in trafos:
+
+    loading = tr.GetAttribute("c:loading")
+
+    if loading > 100:
+        print(
+            f"Trafo overload: "
+            f"{tr.loc_name} {loading:.1f}%"
+        )
+
+
+        
+simout = app.GetFromStudyCase("ComSimoutage")
+
+if not simout:
+    print("No contingency module.")
+    sys.exit()
+
+lines = app.GetCalcRelevantObjects("*.ElmLne")
+
+# remove old auto cases
+for c in simout.GetContents("Auto_*"):
+    c.Delete()
+
+# create N-1
+for line in lines:
+
+    outage = simout.CreateObject(
+        "ComOutage",
+        f"Auto_{line.loc_name}"
+    )
+
+    outage.p_target = line
+
+print("Cases created.")
+
+# execute
+err = simout.Execute()
+
+res = app.GetFromStudyCase("*.ElmRes")
+print(f"stored here:",res)
+
+all_res = app.GetCalcRelevantObjects("*.ElmRes")
+
+for r in all_res:
+    print(r.loc_name)
+
+if err == 0:
+    print("N-1 successful.")
+else:
+    print("Failed.")
+
+
+#This is still not working!!! Cant find a way to access the contingency results...
+
+
+res = app.GetFromStudyCase("Contingency Analysis AC.ElmRes")
+
+print("cases:", res.cnumCase)
+print("vars count:", res.cvars)
+
+idx = res.FindColumn("c:loading")
+
+print("loading idx:", idx)
+
+if idx >= 0:
+
+    for i in range(res.cnumCase):
+
+        print(i, res.GetValue(i, idx))
