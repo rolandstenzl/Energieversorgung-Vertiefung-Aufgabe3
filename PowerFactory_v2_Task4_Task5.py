@@ -5,19 +5,15 @@ from scipy.optimize import minimize
 from datetime import datetime
 import csv
 import os
-
+#_________________
 # =========================================================
-# CONFIGURATION
+# CONFIGURATION 
 # =========================================================
 
 POWERFACTORY_PYTHON = r"C:\Program Files\DIgSILENT\PowerFactory 2025 SP1\Python\3.13"
 PROJECT_NAME = "Transmission System"
 OPERATING_CASE = " "
-TIMESTAMP = "24.07.2024 18:00"
-
-
-#tEST 2
-
+TIMESTAMP = "24.07.2024 14:00"
 
 V_MIN = 0.95
 V_MAX = 1.05
