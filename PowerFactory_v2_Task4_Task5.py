@@ -15,6 +15,10 @@ PROJECT_NAME = "Transmission System"
 OPERATING_CASE = " "
 TIMESTAMP = "24.07.2024 18:00"
 
+
+#tEST 2
+
+
 V_MIN = 0.95
 V_MAX = 1.05
 LINE_LIMIT = 100.0
