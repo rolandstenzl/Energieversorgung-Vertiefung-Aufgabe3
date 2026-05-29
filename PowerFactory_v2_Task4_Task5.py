@@ -5,7 +5,6 @@ from scipy.optimize import minimize
 from datetime import datetime
 import csv
 import os
-#_________________
 # =========================================================
 # CONFIGURATION 
 # =========================================================
