@@ -1,0 +1,26 @@
+Line,FromBus,ToBus,Loading_%,Overloaded
+North East.ElmNet\NE_L1.ElmLne,1.ElmBay\1.ElmTerm,5.ElmBay\5.ElmTerm,26.63319163383207,No
+North East.ElmNet\NE_L2.ElmLne,2.ElmBay\2.ElmTerm,4.ElmBay\4.ElmTerm,26.633191635300985,No
+North East.ElmNet\NE_L3.ElmLne,5.ElmBay\5.ElmTerm,10.ElmBay\10.ElmTerm,59.53102365848895,No
+North East.ElmNet\NE_L4.ElmLne,5.ElmBay\5.ElmTerm,L3.ElmBay\L3.ElmTerm,30.689717550666245,No
+North East.ElmNet\NE_L5.ElmLne,1.ElmBay\1.ElmTerm,R1.ElmBay\R1.ElmTerm,17.51570328416791,No
+North West.ElmNet\NW-NE_L1.ElmLne,7.ElmBay\7.ElmTerm,9.ElmBay\9.ElmTerm,10.685031574933895,No
+North West.ElmNet\NW-NE_L2.ElmLne,6.ElmBay\6.ElmTerm,8.ElmBay\8.ElmTerm,10.697028334653956,No
+North West.ElmNet\NW-NE_L3.ElmLne,3.ElmBay\3.ElmTerm,5.ElmBay\5.ElmTerm,9.744462969008245,No
+North West.ElmNet\NW-NE_L4.ElmLne,4.ElmBay\4.ElmTerm,4.ElmBay\4.ElmTerm,21.77794192630566,No
+North West.ElmNet\NW_L1.ElmLne,2.ElmBay\2.ElmTerm,4.ElmBay\4.ElmTerm,11.607867047707218,No
+North West.ElmNet\NW_L2.ElmLne,1.ElmBay\1.ElmTerm,2.ElmBay\2.ElmTerm,8.067632386859634,No
+North West.ElmNet\NW_L3.ElmLne,1.ElmBay\1.ElmTerm,2.ElmBay\2.ElmTerm,8.067632385835731,No
+South East.ElmNet\NE-SE_L1.ElmLne,7.ElmBay\7.ElmTerm,R2.ElmBay\R2.ElmTerm,10.710538767424497,No
+South East.ElmNet\NE-SE_L2.ElmLne,6.ElmBay\6.ElmTerm,L3.ElmBay\L3.ElmTerm,10.71053886069134,No
+South East.ElmNet\SE_L1.ElmLne,1.ElmBay\1.ElmTerm,L2.ElmBay\L2.ElmTerm,7.515973832512027,No
+South East.ElmNet\SE_L2.ElmLne,R1.ElmBay\R1.ElmTerm,R1.ElmBay\R1.ElmTerm,33.27304843884864,No
+South East.ElmNet\SE_L3.ElmLne,4.ElmBay\4.ElmTerm,L3.ElmBay\L3.ElmTerm,34.961023449277356,No
+South West.ElmNet\NE-SW_L1.ElmLne,1.ElmBay\1.ElmTerm,10.ElmBay\10.ElmTerm,40.51477373683433,No
+South West.ElmNet\NW-SW_L1.ElmLne,7.ElmBay\7.ElmTerm,7.ElmBay\7.ElmTerm,59.34781863930073,No
+South West.ElmNet\NW-SW_L2.ElmLne,8.ElmBay\8.ElmTerm,8.ElmBay\8.ElmTerm,59.4689894734286,No
+South West.ElmNet\SW_L1.ElmLne,2.ElmBay\2.ElmTerm,9.ElmBay\9.ElmTerm,35.94781945433908,No
+South West.ElmNet\SW_L2.ElmLne,5.ElmBay\5.ElmTerm,1.ElmBay\1.ElmTerm,38.15689788521927,No
+South West.ElmNet\SW_L3.ElmLne,6.ElmBay\6.ElmTerm,3.ElmBay\3.ElmTerm,38.156897798683616,No
+South West.ElmNet\SW_L4.ElmLne,6.ElmBay\6.ElmTerm,5.ElmBay\5.ElmTerm,26.638140058441422,No
+South West.ElmNet\SW_L5.ElmLne,8.ElmBay\8.ElmTerm,6.ElmBay\6.ElmTerm,26.63813926761913,No
