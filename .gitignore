@@ -218,4 +218,4 @@ __marimo__/
 .streamlit/secrets.toml
 
 # Results
-.\results_csv
+results_csv/
