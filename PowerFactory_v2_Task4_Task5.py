@@ -917,26 +917,68 @@ def run_n2_analysis(app):
 # TASK 5 – ACTIVE POWER REDISPATCH / CURTAILMENT
 # =========================================================
 
+# =========================================================
+# CONTROLLABLE GENERATORS
+# =========================================================
+
 def get_controllable_generators(app):
-    gens = app.GetCalcRelevantObjects("*.ElmSym")
+
+    gens = app.GetCalcRelevantObjects(
+        "*.ElmSym"
+    )
 
     controllable = []
 
     for g in gens:
-        try:
-            p = g.GetAttribute("pgini")
-            pmin = g.GetAttribute("Pmin_uc")
-            pmax = g.GetAttribute("Pmax_uc")
 
-            if p is None:
+        try:
+
+            # actual solved generation
+            p_actual = g.GetAttribute(
+                "m:Psum:bus1"
+            )
+
+            pmin = g.GetAttribute(
+                "Pmin_uc"
+            )
+
+            pmax = g.GetAttribute(
+                "Pmax_uc"
+            )
+
+            if p_actual is None:
                 continue
 
+            pmin = (
+                pmin
+                if pmin is not None
+                else 0.0
+            )
+
+            pmax = (
+                pmax
+                if pmax is not None
+                else p_actual
+            )
+
             controllable.append({
-                "obj": g,
-                "name": g.loc_name,
-                "p0": p,
-                "pmin": pmin if pmin is not None else 0.0,
-                "pmax": pmax if pmax is not None else p
+
+                "obj":
+                    g,
+
+                "name":
+                    g.loc_name,
+
+                # actual PF operating point
+                "p_actual":
+                    p_actual,
+
+                # limits
+                "pmin":
+                    pmin,
+
+                "pmax":
+                    pmax
             })
 
         except:
@@ -962,28 +1004,65 @@ def optimize_redispatch(app):
         print("No controllable generators found.")
         return
 
+
+    # -------------------------------------------------
+    # FEASIBLE INITIAL DISPATCH
+    # -------------------------------------------------
+
     x0 = []
 
     for g in generators:
 
-        p0 = g["p0"]
+        p_actual = g["p_actual"]
+
         pmin = g["pmin"]
         pmax = g["pmax"]
 
-        if p0 < pmin:
-            p0 = pmin
-        elif p0 > pmax:
-            p0 = pmax
+        # optimizer starting point
+        p_ref = max(
 
-        x0.append(p0)
+            pmin,
+
+            min(
+                p_actual,
+                pmax
+            )
+        )
+
+        # store feasible reference
+        g["p_ref"] = p_ref
+
+        x0.append(
+            p_ref
+        )
+
+    # -------------------------------------------------
+    # BOUNDS
+    # -------------------------------------------------
 
     bounds = [
-        (g["pmin"], g["pmax"])
+
+        (
+            g["pmin"],
+            g["pmax"]
+        )
+
         for g in generators
     ]
 
-    total_generation = sum(x0)
+    # -------------------------------------------------
+    # POWER BALANCE
+    # -------------------------------------------------
 
+    total_generation = sum(
+        x0
+    )
+    # -------------------------------------------------
+    # TOTAL GENERATION
+    # keep redispatch power-balanced
+    # -------------------------------------------------
+
+    total_generation = sum(x0)
     # -------------------------------------------------
     # HELPER
     # -------------------------------------------------
@@ -997,19 +1076,162 @@ def optimize_redispatch(app):
                 float(x[i])
             )
 
+
     # -------------------------------------------------
     # OBJECTIVE
+    # PRIMARY:
+    # minimize congestion / overload
+    #
+    # SECONDARY:
+    # minimize redispatch movement
     # -------------------------------------------------
+
+    REDISPATCH_WEIGHT = 0.001
+    OVERLOAD_WEIGHT = 1000.0
+
 
     def objective(x):
 
-        return sum(
+        # ---------------------------------------------
+        # apply candidate dispatch
+        # ---------------------------------------------
+
+        apply_dispatch(x)
+
+        try:
+
+            run_load_flow(app)
+
+        except:
+
+            # heavy penalty for non-convergent LF
+            return 1e12
+
+        # ---------------------------------------------
+        # line loading penalties
+        # ---------------------------------------------
+
+        congestion_penalty = 0.0
+
+        max_loading = 0.0
+
+        for line in app.GetCalcRelevantObjects(
+            "*.ElmLne"
+        ):
+
+            try:
+
+                loading = line.GetAttribute(
+                    "c:loading"
+                )
+
+                if loading is None:
+                    continue
+
+                max_loading = max(
+                    max_loading,
+                    loading
+                )
+
+                # smooth network stress penalty
+                congestion_penalty += (
+
+                    loading ** 2
+
+                )
+
+                # strong overload penalty
+                if loading > OPT_LINE_LIMIT:
+
+                    congestion_penalty += (
+
+                        OVERLOAD_WEIGHT
+                        *
+                        (
+                            loading
+                            -
+                            OPT_LINE_LIMIT
+                        ) ** 2
+                    )
+
+            except:
+                pass
+
+        # ---------------------------------------------
+        # redispatch penalty
+        # ---------------------------------------------
+
+        redispatch_penalty = sum(
+
             (
                 x[i]
-                - generators[i]["p0"]
+                -
+                generators[i]["p_actual"]
             ) ** 2
+
             for i in range(len(x))
         )
+
+        # ---------------------------------------------
+        # combined objective
+        # ---------------------------------------------
+
+        total_obj = (
+
+            congestion_penalty
+
+            +
+
+            REDISPATCH_WEIGHT
+            *
+            redispatch_penalty
+        )
+
+        return total_obj
+
+
+    # -------------------------------------------------
+    # HARD LINE LIMIT CONSTRAINT
+    # keeps all lines below target limit
+    # -------------------------------------------------
+
+    def constraint_basecase(x):
+
+        apply_dispatch(x)
+
+        try:
+            run_load_flow(app)
+
+        except:
+            return -1000
+
+        margins = []
+
+        for line in app.GetCalcRelevantObjects(
+            "*.ElmLne"
+        ):
+
+            try:
+
+                loading = line.GetAttribute(
+                    "c:loading"
+                )
+
+                if loading is not None:
+
+                    margins.append(
+                        OPT_LINE_LIMIT
+                        -
+                        loading
+                    )
+
+            except:
+                pass
+
+        if not margins:
+            return -1000
+
+        return min(margins)
 
     # -------------------------------------------------
     # POWER BALANCE
@@ -1022,43 +1244,7 @@ def optimize_redispatch(app):
             - total_generation
         )
 
-    # -------------------------------------------------
-    # BASE CASE LINE LIMITS
-    # -------------------------------------------------
 
-    def constraint_basecase(x):
-
-        apply_dispatch(x)
-
-        try:
-            run_load_flow(app)
-        except:
-            return -1000
-
-        margins = []
-
-        for line in app.GetCalcRelevantObjects("*.ElmLne"):
-
-            try:
-
-                loading = line.GetAttribute(
-                    "c:loading"
-                )
-
-                if loading is not None:
-
-                    margins.append(
-                        OPT_LINE_LIMIT
-                        - loading
-                    )
-
-            except:
-                pass
-
-        if not margins:
-            return -1000
-
-        return min(margins)
 
     # -------------------------------------------------
     # OPTIONAL N-1 SECURITY
@@ -1143,11 +1329,6 @@ def optimize_redispatch(app):
     constraints = [
 
         {
-            "type": "ineq",
-            "fun": constraint_basecase
-        },
-
-        {
             "type": "eq",
             "fun": constraint_balance
         }
@@ -1169,10 +1350,26 @@ def optimize_redispatch(app):
     for g in generators:
 
         print(
+
             g["name"],
-            "P0 =", g["p0"],
-            "Pmin =", g["pmin"],
-            "Pmax =", g["pmax"]
+
+            "Actual =",
+            round(
+                g["p_actual"],
+                2
+            ),
+
+            "Reference =",
+            round(
+                g["p_ref"],
+                2
+            ),
+
+            "Pmin =",
+            g["pmin"],
+
+            "Pmax =",
+            g["pmax"]
         )
 
     print(
@@ -1193,11 +1390,24 @@ def optimize_redispatch(app):
     # -------------------------------------------------
 
     res = minimize(
+
         objective,
+
         x0,
+
         method="SLSQP",
+
         bounds=bounds,
-        constraints=constraints
+
+        constraints=constraints,
+
+        options={
+
+            "maxiter": 100,
+            "ftol": 1e-5,
+            "eps": 1.0,
+            "disp": True
+        }
     )
 
     # -------------------------------------------------
@@ -1235,14 +1445,14 @@ def optimize_redispatch(app):
                 g["name"],
 
             "P_before_MW":
-                g["p0"],
+                g["p_actual"],
 
             "P_after_MW":
                 res.x[i],
 
             "Redispatch_MW":
                 res.x[i]
-                - g["p0"]
+                - g["p_actual"]
 
         })
 
@@ -1268,7 +1478,7 @@ def optimize_redispatch(app):
         print(
 
             f'{g["name"]}: '
-            f'{g["p0"]:.2f} -> '
+            f'{g["p_ref"]:.2f} -> '
             f'{res.x[i]:.2f} MW'
 
         )
