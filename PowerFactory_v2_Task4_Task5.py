@@ -18,7 +18,7 @@ TIMESTAMP = "24.07.2024 14:00" # Test Max Test Josef
 V_MIN = 0.95
 V_MAX = 1.05
 LINE_LIMIT = 100.0
-STRICT_LIMIT = True
+STRICT_LIMIT = False
 ENABLE_N1_REDISPATCH = False
 
 
@@ -1111,7 +1111,7 @@ def optimize_redispatch(app):
         # line loading penalties
         # ---------------------------------------------
 
-        congestion_penalty = 0.0
+        congestion_penalty = 0.05
 
         max_loading = 0.0
 
