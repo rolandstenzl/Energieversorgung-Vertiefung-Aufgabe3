@@ -130,8 +130,8 @@ def get_bus_results(app):
         try:
             results.append({
                 "name": bus.loc_name,
-                "voltage_pu": bus.GetAttribute("m:u1"),
-                "voltage_kv": bus.GetAttribute("m:U")
+                "voltage_pu": bus.GetAttribute("m:u1"), # p.u.
+                "voltage_kv": bus.GetAttribute("m:U")   # kV
             })
         except:
             continue
@@ -1050,13 +1050,6 @@ def optimize_redispatch(app):
         for g in generators
     ]
 
-    # -------------------------------------------------
-    # POWER BALANCE
-    # -------------------------------------------------
-
-    total_generation = sum(
-        x0
-    )
     # -------------------------------------------------
     # TOTAL GENERATION
     # keep redispatch power-balanced
